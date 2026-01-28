@@ -1,0 +1,181 @@
+:root {
+  --primary: #2481cc;
+  --primary-hover: #1e6ba8;
+  --bg: #1e1e1e;
+  --surface: #2c2c2c;
+  --text: #ffffff;
+  --text-secondary: #aaaaaa;
+  --border: #3d3d3d;
+  --success: #00c853;
+  --danger: #ff5252;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 320px;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+}
+
+.container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+header img {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+h1 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+select, input {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px;
+  border-radius: 6px;
+  outline: none;
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+
+select:focus, input:focus {
+  border-color: var(--primary);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-danger {
+  background-color: var(--surface);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+.btn-danger:hover {
+  background-color: rgba(255, 82, 82, 0.1);
+}
+
+.btn-secondary {
+  background-color: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--border);
+}
+
+.status-card {
+  background-color: var(--surface);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border);
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.status-value {
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.progress-container {
+  height: 4px;
+  background-color: var(--bg);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+  position: relative;
+}
+
+.progress-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 30%; /* Dynamic */
+  background-color: var(--primary);
+  animation: shimmer 1s infinite linear;
+}
+
+@keyframes shimmer {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Scrollbar aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
