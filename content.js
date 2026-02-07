@@ -66,24 +66,41 @@ function stopScraping() {
     });
 }
 
+// Track the current date context as we parse messages
+let currentDateContext = "";
+
 // Helper function to find date from date separator bubbles
 function findDateFromSeparator(node) {
-    // Look for date separator service bubbles before this message
+    // Look for date separator elements before this message
     let prevSibling = node.previousElementSibling;
     let searchCount = 0;
 
-    while (prevSibling && searchCount < 20) {
-        // Check various date separator classes used by Telegram Web
+    while (prevSibling && searchCount < 50) {
+        // Check for Telegram Web A's sticky-date class
+        const isStickyDate = prevSibling.classList.contains('sticky-date');
+
+        // Check for Telegram Web K's date separators
         const isDateSeparator =
+            isStickyDate ||
             prevSibling.classList.contains('service') ||
             prevSibling.classList.contains('bubble-date') ||
             prevSibling.classList.contains('bubble-date-group') ||
             prevSibling.classList.contains('date-group') ||
             prevSibling.classList.contains('is-date') ||
-            prevSibling.querySelector('.service-msg, .bubble-service, .date-group-title');
+            (prevSibling.classList.contains('bubble') && prevSibling.classList.contains('is-date')) ||
+            prevSibling.querySelector('.service-msg, .bubble-service, .date-group-title, .sticky-date');
 
         if (isDateSeparator) {
-            const dateText = prevSibling.innerText?.trim();
+            // For sticky-date, the text is often in a span inside
+            let dateText = "";
+            const spanEl = prevSibling.querySelector('span');
+            if (spanEl) {
+                dateText = spanEl.innerText?.trim();
+            }
+            if (!dateText) {
+                dateText = prevSibling.innerText?.trim();
+            }
+
             // Date separators are usually short text without colons (no time format)
             // and contain date-like patterns
             if (dateText && dateText.length < 50) {
@@ -99,18 +116,45 @@ function findDateFromSeparator(node) {
             }
         }
 
-        // Stop if we hit another message bubble (not a separator)
-        if (prevSibling.classList.contains('bubble') &&
-            !prevSibling.classList.contains('service') &&
-            !prevSibling.classList.contains('is-date')) {
-            // Continue searching past messages
-        }
-
         prevSibling = prevSibling.previousElementSibling;
         searchCount++;
     }
 
     return null;
+}
+
+// Helper function to extract date from message-time text
+// Telegram Web A shows "Dec 1, 2025 at 07:30 AM" for older messages
+function parseMessageTime(timeText) {
+    if (!timeText) return { date: "", time: "" };
+
+    timeText = timeText.trim();
+
+    // Pattern: "Dec 1, 2025 at 07:30 AM" or "December 1, 2025 at 07:30 AM"
+    const fullDateTimePattern = /^(.+?)\s+at\s+(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i;
+    const match = timeText.match(fullDateTimePattern);
+
+    if (match) {
+        return {
+            date: match[1].trim(),
+            time: match[2].trim()
+        };
+    }
+
+    // Just time: "07:30 AM" or "19:30"
+    const timeOnlyPattern = /^(\d{1,2}:\d{2}\s*(?:AM|PM)?)$/i;
+    if (timeOnlyPattern.test(timeText)) {
+        return {
+            date: "",
+            time: timeText
+        };
+    }
+
+    // Fallback: return as time
+    return {
+        date: "",
+        time: timeText
+    };
 }
 
 function parseVisibleMessages() {
@@ -155,16 +199,23 @@ function parseVisibleMessages() {
         }
 
         if (timeNode) {
-            // Get the time text (e.g., "03:01 PM")
-            time = timeNode.innerText?.trim() ||
+            // Get the time text - could be "03:01 PM" or "Dec 1, 2025 at 07:30 AM"
+            const rawTimeText = timeNode.innerText?.trim() ||
                 timeNode.getAttribute('title')?.trim() ||
                 "";
+
+            // Parse the time text to extract date and time separately
+            const parsed = parseMessageTime(rawTimeText);
+            time = parsed.time;
+            if (parsed.date) {
+                calendarDate = parsed.date;
+            }
         }
 
-        // Try data-timestamp for full datetime
+        // Try data-timestamp for full datetime (if available)
         const timestampAttr = node.getAttribute('data-timestamp') ||
             node.getAttribute('data-time');
-        if (timestampAttr) {
+        if (timestampAttr && !calendarDate) {
             const ts = parseInt(timestampAttr);
             if (!isNaN(ts)) {
                 const dateObj = ts < 10000000000 ? new Date(ts * 1000) : new Date(ts);
@@ -183,9 +234,20 @@ function parseVisibleMessages() {
             }
         }
 
-        // If we don't have a calendar date yet, look for date separator bubbles
+        // If we still don't have a calendar date, look for date separator bubbles
         if (!calendarDate) {
-            calendarDate = findDateFromSeparator(node) || "";
+            const separatorDate = findDateFromSeparator(node);
+            if (separatorDate) {
+                calendarDate = separatorDate;
+                // Update the current date context for future messages
+                currentDateContext = separatorDate;
+            } else if (currentDateContext) {
+                // Use the last known date context
+                calendarDate = currentDateContext;
+            }
+        } else {
+            // Update current date context with what we found
+            currentDateContext = calendarDate;
         }
 
         // Combine date and time into a full date string
