@@ -7,7 +7,8 @@ A Chrome extension to export Telegram Web group chat messages to various formats
 - **Multiple Export Formats**: Export chats to JSON, CSV, HTML, or plain text
 - **Auto-Scroll**: Automatically scrolls through chat history to capture all messages
 - **Date & Time Extraction**: Captures both message time and calendar dates from date separator bubbles
-- **Clean Text Extraction**: Removes metadata, reactions, and other UI elements for clean message text
+- **Smart Sender Detection**: Accurately identifies senders even for consecutive messages and reply threads
+- **Clean Text Extraction**: Removes quoted replies, reactions, and other UI elements for clean message text
 - **Chronological Sorting**: Messages are sorted from oldest to newest
 
 ## Installation
