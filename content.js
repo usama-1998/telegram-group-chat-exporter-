@@ -334,39 +334,91 @@ function parseVisibleMessages() {
                 sender = senderNode.innerText?.trim();
             } else {
                 // PRIORITY 3: For consecutive messages without visible sender, look at previous siblings
-                // Find the first message in this group that has a sender name
+                // Also check within the same message-date-group container
+
+                // First, try sibling lookup within the DOM
                 let prevSibling = node.previousElementSibling;
                 let searchCount = 0;
 
-                while (prevSibling && searchCount < 20) {
-                    // Stop if we hit a date separator or non-message element
-                    if (!prevSibling.classList.contains('Message') &&
-                        !prevSibling.classList.contains('message-list-item')) {
+                while (prevSibling && searchCount < 30) {
+                    // Skip sticky-date separators but continue searching
+                    if (prevSibling.classList.contains('sticky-date')) {
+                        prevSibling = prevSibling.previousElementSibling;
+                        searchCount++;
+                        continue;
+                    }
+
+                    // Stop if we hit a message-date-group boundary or non-message element
+                    if (prevSibling.classList.contains('message-date-group')) {
                         break;
                     }
 
-                    // Check if this sibling has a sender name
-                    for (const sel of senderSelectors) {
-                        const nodes = prevSibling.querySelectorAll(sel);
-                        for (const n of nodes) {
-                            const isInsideJunk = junkContainers.some(junk => n.closest(junk));
-                            if (!isInsideJunk) {
-                                sender = n.innerText?.trim();
-                                break;
-                            }
+                    // Check if this is a message element
+                    const isMessage = prevSibling.classList.contains('Message') ||
+                        prevSibling.classList.contains('message-list-item') ||
+                        prevSibling.classList.contains('bubble');
+
+                    if (isMessage) {
+                        // Check if sibling is own message first
+                        if (prevSibling.classList.contains('own')) {
+                            sender = "You";
+                            break;
                         }
+
+                        // Check if this sibling has a sender name
+                        for (const sel of senderSelectors) {
+                            const nodes = prevSibling.querySelectorAll(sel);
+                            for (const n of nodes) {
+                                const isInsideJunk = junkContainers.some(junk => n.closest(junk));
+                                if (!isInsideJunk) {
+                                    const foundSender = n.innerText?.trim();
+                                    if (foundSender && foundSender.length > 0) {
+                                        sender = foundSender;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (sender !== "Unknown") break;
+                        }
+
                         if (sender !== "Unknown") break;
                     }
 
-                    // Check if sibling is own message
-                    if (sender === "Unknown" && prevSibling.classList.contains('own')) {
-                        sender = "You";
-                    }
-
-                    if (sender !== "Unknown") break;
-
                     prevSibling = prevSibling.previousElementSibling;
                     searchCount++;
+                }
+
+                // PRIORITY 4: If still unknown, check if we're in a message-date-group 
+                // and look for the first message with a sender in that group
+                if (sender === "Unknown") {
+                    const dateGroup = node.closest('.message-date-group');
+                    if (dateGroup) {
+                        const allMessages = dateGroup.querySelectorAll('.Message, .message-list-item, .bubble');
+                        for (const msg of allMessages) {
+                            if (msg === node) continue; // Skip current message
+
+                            if (msg.classList.contains('own')) {
+                                sender = "You";
+                                break;
+                            }
+
+                            for (const sel of senderSelectors) {
+                                const nodes = msg.querySelectorAll(sel);
+                                for (const n of nodes) {
+                                    const isInsideJunk = junkContainers.some(junk => n.closest(junk));
+                                    if (!isInsideJunk) {
+                                        const foundSender = n.innerText?.trim();
+                                        if (foundSender && foundSender.length > 0) {
+                                            sender = foundSender;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (sender !== "Unknown") break;
+                            }
+                            if (sender !== "Unknown") break;
+                        }
+                    }
                 }
             }
         }
