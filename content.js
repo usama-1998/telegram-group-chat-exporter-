@@ -71,7 +71,51 @@ let currentDateContext = "";
 
 // Helper function to find date from date separator bubbles
 function findDateFromSeparator(node) {
-    // Look for date separator elements before this message
+    // STRATEGY 1: Check if message is inside a .message-date-group container (Telegram Web A)
+    // In Web A, the structure is:
+    // .message-date-group
+    //   ├── .sticky-date ("Today", "January 22", etc.)
+    //   └── .Message (multiple messages)
+    const dateGroup = node.closest('.message-date-group');
+    if (dateGroup) {
+        const stickyDate = dateGroup.querySelector('.sticky-date');
+        if (stickyDate) {
+            let dateText = stickyDate.querySelector('span')?.innerText?.trim() || stickyDate.innerText?.trim();
+            if (dateText && dateText.length < 50) {
+                return dateText;
+            }
+        }
+    }
+
+    // STRATEGY 2: Check for sticky-date as a previous sibling at the parent level
+    // Some layouts have date groups as siblings to messages
+    const parent = node.parentElement;
+    if (parent) {
+        let prevGroup = node.previousElementSibling;
+        let searchCount = 0;
+        while (prevGroup && searchCount < 10) {
+            if (prevGroup.classList.contains('message-date-group')) {
+                const stickyDate = prevGroup.querySelector('.sticky-date');
+                if (stickyDate) {
+                    let dateText = stickyDate.querySelector('span')?.innerText?.trim() || stickyDate.innerText?.trim();
+                    if (dateText && dateText.length < 50) {
+                        return dateText;
+                    }
+                }
+            }
+            // Direct sticky-date sibling
+            if (prevGroup.classList.contains('sticky-date')) {
+                let dateText = prevGroup.querySelector('span')?.innerText?.trim() || prevGroup.innerText?.trim();
+                if (dateText && dateText.length < 50) {
+                    return dateText;
+                }
+            }
+            prevGroup = prevGroup.previousElementSibling;
+            searchCount++;
+        }
+    }
+
+    // STRATEGY 3: Fall back to sibling search for Telegram Web K
     let prevSibling = node.previousElementSibling;
     let searchCount = 0;
 
