@@ -31,6 +31,8 @@ function startScraping(format) {
     currentFormat = format || 'json';
     scrapedMessages.clear();
     dateContextMap.clear();
+    currentDateContext = "";
+    currentSenderContext = "";
     lastHeight = 0;
     sameHeightCount = 0;
 
@@ -68,6 +70,8 @@ function stopScraping() {
 
 // Track the current date context as we parse messages
 let currentDateContext = "";
+// Track the current sender context for consecutive messages from same person
+let currentSenderContext = "";
 
 // Helper function to find date from date separator bubbles
 function findDateFromSeparator(node) {
@@ -308,7 +312,14 @@ function parseVisibleMessages() {
         let sender = "Unknown";
         const senderNode = node.querySelector('.sender-title, .name, .message-title, .peer-title');
         if (senderNode) {
-            sender = senderNode.innerText;
+            sender = senderNode.innerText?.trim();
+            // Update current sender context
+            if (sender && sender !== "Unknown") {
+                currentSenderContext = sender;
+            }
+        } else if (currentSenderContext) {
+            // Use the last known sender for consecutive messages
+            sender = currentSenderContext;
         }
 
         // --- EXTRACT TEXT (CLEAN STRATEGY) ---
