@@ -338,10 +338,13 @@ function parseVisibleMessages() {
         const junkSelectors = [
             '.message-time', '.time', '.inner-time', // Time
             '.sender-title', '.name', '.message-title', '.peer-title', // Sender
-            '.reply', '.reply-wrapper', // Quoted replies
+            '.reply', '.reply-wrapper', // Quoted replies (Web K)
+            '.EmbeddedMessage', '.embedded-text-wrapper', '.embedded-sender', // Quoted replies (Web A)
+            '.message-subheader', // Reply preview container (Web A)
+            '.reply-markup', // Bot buttons and inline keyboards
             '.avatar', '.peer-avatar',
             '.reactions', '.reaction-list',
-            '.forwarded-message', // Forward header
+            '.forwarded-message', '.forward-title-container', // Forward headers
             '.admin-badge', '.badge', // Badges
             'svg', 'img' // Icons
         ];
