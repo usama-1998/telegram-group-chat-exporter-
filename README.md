@@ -47,9 +47,10 @@ A Chrome extension to export Telegram Web group chat messages to various formats
 
 - Works with both Telegram Web A (`web.telegram.org/a`) and Web K (`web.telegram.org/k`)
 - Large chats may take time to fully scroll and capture
-- Dates are extracted from:
-  - Message time elements (e.g., "Dec 1, 2025 at 07:30 AM")
-  - Date separator bubbles (e.g., "December 4, 2025")
+- Dates are extracted using multiple strategies:
+  - From `.message-date-group` containers (Web A)
+  - From `.sticky-date` separator bubbles
+  - From message time elements (e.g., "Dec 1, 2025 at 07:30 AM")
   - Date context is maintained across messages for consistent timestamping
 
 ## License
