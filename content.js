@@ -32,7 +32,6 @@ function startScraping(format) {
     scrapedMessages.clear();
     dateContextMap.clear();
     currentDateContext = "";
-    currentSenderContext = "";
     lastHeight = 0;
     sameHeightCount = 0;
 
@@ -70,8 +69,6 @@ function stopScraping() {
 
 // Track the current date context as we parse messages
 let currentDateContext = "";
-// Track the current sender context for consecutive messages from same person
-let currentSenderContext = "";
 
 // Helper function to find date from date separator bubbles
 function findDateFromSeparator(node) {
@@ -310,16 +307,68 @@ function parseVisibleMessages() {
 
         // --- EXTRACT SENDER ---
         let sender = "Unknown";
-        const senderNode = node.querySelector('.sender-title, .name, .message-title, .peer-title');
-        if (senderNode) {
-            sender = senderNode.innerText?.trim();
-            // Update current sender context
-            if (sender && sender !== "Unknown") {
-                currentSenderContext = sender;
+
+        // PRIORITY 1: Check if this is an outgoing message (your own message)
+        if (node.classList.contains('own')) {
+            sender = "You";
+        } else {
+            // PRIORITY 2: Look for sender node that is NOT inside a junk container (reply/forward)
+            const senderSelectors = ['.sender-title', '.name', '.message-title', '.peer-title', '.message-title-name'];
+            const junkContainers = ['.EmbeddedMessage', '.message-subheader', '.reply', '.reply-wrapper', '.forward-title-container'];
+
+            let senderNode = null;
+            for (const sel of senderSelectors) {
+                const nodes = node.querySelectorAll(sel);
+                for (const n of nodes) {
+                    // Make sure this sender node is NOT inside a junk container
+                    const isInsideJunk = junkContainers.some(junk => n.closest(junk));
+                    if (!isInsideJunk) {
+                        senderNode = n;
+                        break;
+                    }
+                }
+                if (senderNode) break;
             }
-        } else if (currentSenderContext) {
-            // Use the last known sender for consecutive messages
-            sender = currentSenderContext;
+
+            if (senderNode) {
+                sender = senderNode.innerText?.trim();
+            } else {
+                // PRIORITY 3: For consecutive messages without visible sender, look at previous siblings
+                // Find the first message in this group that has a sender name
+                let prevSibling = node.previousElementSibling;
+                let searchCount = 0;
+
+                while (prevSibling && searchCount < 20) {
+                    // Stop if we hit a date separator or non-message element
+                    if (!prevSibling.classList.contains('Message') &&
+                        !prevSibling.classList.contains('message-list-item')) {
+                        break;
+                    }
+
+                    // Check if this sibling has a sender name
+                    for (const sel of senderSelectors) {
+                        const nodes = prevSibling.querySelectorAll(sel);
+                        for (const n of nodes) {
+                            const isInsideJunk = junkContainers.some(junk => n.closest(junk));
+                            if (!isInsideJunk) {
+                                sender = n.innerText?.trim();
+                                break;
+                            }
+                        }
+                        if (sender !== "Unknown") break;
+                    }
+
+                    // Check if sibling is own message
+                    if (sender === "Unknown" && prevSibling.classList.contains('own')) {
+                        sender = "You";
+                    }
+
+                    if (sender !== "Unknown") break;
+
+                    prevSibling = prevSibling.previousElementSibling;
+                    searchCount++;
+                }
+            }
         }
 
         // --- EXTRACT TEXT (CLEAN STRATEGY) ---
